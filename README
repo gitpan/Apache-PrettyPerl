@@ -1,6 +1,6 @@
 Apache::PrettyPerl - Apache mod_perl PerlHandler for nicer output perl files 
 in the client's browser. For more information see Apache::PrettyPerl home
-page http://amk.lg.ua/~ra/PrettyPerl
+page http://amk.lg.ua/~ra/PrettyPerl/
 
 To install, first install mod_perl (see http://perl.apache.org).
 Then cd to the directory that contains this README file 
@@ -27,7 +27,8 @@ are now ready to use Apache::PrettyPerl. Configurate your apache as
 it described in the man page. 
 Enjoy!
 
-Copyright (c) 2000 Roman Kosenko <ra@amk.lg.ua>
+Copyright (c) 2000 Roman Kosenko <ra(at)amk.lg.ua>
+Copyright (c) 2004 Florian Forster <octopus(at)verplant.org>
 All righs reserved.
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

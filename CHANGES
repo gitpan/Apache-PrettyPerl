@@ -1,3 +1,5 @@
-Version 1.03	May 24 2000
+Version 2.00, Feb 06 2004, Florian Forster <octopus@verplant.org>
+- Rewrite of pretty much everything but the documentation.
 
+Version 1.03, May 24 2000, Roman Kosenko <ra@amk.lg.ua>
 - First official reliase
