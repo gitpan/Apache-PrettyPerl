@@ -4,11 +4,14 @@ use strict;
 use warnings;
 use vars qw/$VERSION/;
 
-use Apache::Constants qw/:common/;
-use Apache::File;
+use Apache::Const qw/:common/;
+use Apache::RequestRec;
+use Apache::RequestIO;
+use Apache::RequestUtil;
+use Apache::Response;
 use File::Basename qw/basename/;
 
-$VERSION = '2.00';
+$VERSION = '2.10';
 
 # You can set colors here. Use HTML color names or codes
 # (like #ff0000 being red).
@@ -66,8 +69,7 @@ qw(
 	system syswrite tell telldir tie tied
 	time times truncate uc ucfirst umask undef
 	unlink unpack unshift untie utime values
-	vec wait waitpid wantarray wantarray
-	warn write
+	vec wait waitpid wantarray warn write
 );
 
 our @Buffer = ();
@@ -79,12 +81,22 @@ sub handler
 {
 	my $req = shift;
 	my $filename = $req->filename ();
-	my $fh = new Apache::File ($filename);
 	my $dl = 0;
 	my $dl_ok = 0;
 	my $data;
+	my $mtime;
 
-	local $/ = undef;
+	if (!-e $filename)
+	{
+		return (NOT_FOUND);
+	}
+
+	if (!-r $filename)
+	{
+		return (FORBIDDEN);
+	}
+
+	$mtime = (stat ($filename))[9] or return (SERVER_ERROR);
 
 	if ($req->dir_config ('AllowDownload'))
 	{
@@ -128,18 +140,19 @@ sub handler
 		}
 	}
 
-	$req->send_http_header ();
+	$req->set_last_modified ($mtime);
+	$req->set_etag ();
 
 	if ($req->header_only ())
 	{
 		return (OK);
 	}
 
-	$data = <$fh>;
+	$data = $req->slurp_filename ();
 
 	if ($dl)
 	{
-		$req->print ($data);
+		$req->print ($$data);
 	}
 	else
 	{
@@ -149,7 +162,7 @@ sub handler
 		{
 			$req->print (get_dl_link ($req));
 		}
-		$req->print (perl2html ($data));
+		$req->print (perl2html ($$data));
 		$req->print (get_foot ());
 	}
 
@@ -171,7 +184,6 @@ sub get_head
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <title>Source of $file</title>
-<meta http-equiv="Cache-Control" content="no-cache" />
 <meta name="generator" content="Apahe::PrettyPerl" />
 <style type="text/css">
 <!--
@@ -766,6 +778,15 @@ __END__
 
 B<Apache::PrettyPerl> - Apache mod_perl PerlHandler for nicer output perl files in the client's browser.
 
+=head1 DESCRIPTION
+
+This is an B<Apache2> B<mod_perl2>-handler that converts perl files on the fly
+into syntax highlighted HTML. So your perl scripts/modules will be look nicer.
+Also possibly download original perl file (without syntax highlight). 
+
+If you want to use B<Apache1> (and B<mod_perl1>) you need to get
+B<Apache::PrettyPerl 2.00>.
+
 =head1 SYNOPSIS
 
 You must be using mod_perl. See http://perl.apache.org/ for details.
@@ -783,16 +804,10 @@ apache directives look like these:
     PerlSetVar		AllowDownload	On
   </Files>
 
-There is only example of apache configuration. Most probably you
-should like place <Files> directive inside <Directory> directive.
-Otherwise will be handled all perl files, including CGI and mod_perl
-scripts.
-
-=head1 DESCRIPTION
-
-This is apache handler that converts perl files on the fly into syntax
-highlighted HTML. So your perl scripts/modules will be look nicer. Also
-possibly download original perl file (without syntax highlight). 
+This is only an example of an apache configuration. Most probably you
+should place the I<E<lt>FilesE<gt>> directive inside a I<E<lt>DirectoryE<gt>>
+directive. Otherwise will be handled all perl files, including CGI and
+mod_perl scripts.
 
 =head1 CONFIGURATION DIRECTIVES
 
@@ -818,7 +833,7 @@ unmodified file to be downloaded. Defaults to ``off''.
 
 =head1 SEE ALSO
 
-perl(1), mod_perl(3), Apache(3)
+L<perl(1)>, L<mod_perl(3)>, L<Apache(3)>
 
 =head1 AUTHORS
 
@@ -827,14 +842,13 @@ Roman Kosenko, Florian octo Forster
 =head2 Contact info
 
   Roman Kosenko:   ra(at)amk.lg.ua
-  Florian Forster: octopus(at)verplant.org
+  Florian Forster: octo(at)verplant.org
 
   Home page: http://amk.lg.ua/~ra/PrettyPerl/
 
 =head2 Copyright
 
 Copyright (c) 2000 Roman Kosenko.
-Copyright (c) 2004 Florian Forster.
-All rights reserved.  This package is free software; 
-you can redistribute it and/or modify it under the same 
-terms as Perl itself.
+Copyright (c) 2004, 2005 Florian Forster.
+All rights reserved.  This package is free software; you can redistribute it
+	and/or modify it under the same terms as Perl itself.
